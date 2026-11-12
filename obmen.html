@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Студенческий обмен</title>
+<style>
+:root{font:16px/1.5 "DM Sans","Segoe UI",sans-serif;color:#242b23;background:#f5f6f0;--green:#244b39;--line:#dbe1d6}
+*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}
+header{background:#fff;border-bottom:1px solid var(--line)}.top,main{max-width:1120px;margin:auto;padding:20px 28px}
+.top,nav,.row,.filters{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.top{justify-content:space-between}
+.brand{font-weight:750;color:var(--green);font-size:1.18rem}.account{font-size:.875rem;color:#4c584e}
+button{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 14px;color:var(--green);cursor:pointer;font-weight:600}
+button:hover{border-color:var(--green)}.primary,nav button[aria-current="page"]{background:var(--green);color:#fff;border-color:var(--green)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #357b5e;outline-offset:3px}
+.intro{margin:22px 0 24px;padding:32px;border-radius:18px;background:#e2ecdb}.intro h1{font-size:clamp(2rem,5vw,3.3rem);letter-spacing:-.045em;margin:0;line-height:1.1}.intro p{margin:12px 0 0;color:#405244}
+.filters{margin:18px 0}.filters input{flex:1 1 230px}input,select,textarea{background:#fff;border:1px solid #b9c6b9;border-radius:8px;padding:9px 11px;max-width:100%;color:#242b23}
+label{display:block;font-weight:600}.field input,.field textarea,.field select{display:block;width:100%;margin-top:5px}.field{margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}.card,.panel,.empty{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;overflow-wrap:anywhere}.panel{max-width:690px;margin-bottom:16px}
+.card{display:flex;flex-direction:column;align-items:flex-start}.card button{margin-top:auto}.card h2{font-size:1.23rem;margin:10px 0 0}.card p{margin:6px 0 16px}
+.tag{display:inline-block;background:#e7efe2;border-radius:30px;padding:3px 9px;font-size:.82rem;font-weight:650}.request{background:#f4e9d3}.muted{color:#516052}.description{white-space:pre-wrap}
+.status{margin:0 0 14px;border-radius:8px;padding:10px 12px;background:#e2ecdb}.status:empty{display:none}.error{background:#fae9e6;color:#822c21}
+h1,h2,h3{line-height:1.22}.count{margin-bottom:10px}.footer{margin:26px 0;color:#516052;font-size:.88rem}
+@media(max-width:600px){.top,main{padding:15px}.intro{padding:22px}.filters select{flex:1 1 125px}}
+</style>
+<header><div class="top"><span class="brand">Студенческий обмен</span><label class="account">Профиль для демо <select id="profile"><option value="lena">Лена</option><option value="sasha">Саша</option></select></label></div></header>
+<main>
+  <nav aria-label="Разделы">
+    <button type="button" data-page="catalog">Каталог</button>
+    <button type="button" data-page="mine">Мои объявления</button>
+    <button type="button" class="primary" data-page="new">＋ Опубликовать</button>
+  </nav>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <section id="screen"></section>
+  <p class="footer">Учебный прототип. Объявления и отклики хранятся в этом браузере.</p>
+</main>
+<script>
+'use strict';
+const profiles = {lena:'Лена',sasha:'Саша'};
+const subjects = ['Математика','Информатика','Английский','Другое'];
+const seed = [
+  {id:'algebra',owner:'lena',type:'offer',title:'Сборник задач по алгебре',subject:'Математика',description:'Бумажный сборник за первый курс. Могу передать после занятий.',closed:false},
+  {id:'sql',owner:'sasha',type:'request',title:'Конспект по SQL',subject:'Информатика',description:'Ищу конспект по темам JOIN и группировка данных.',closed:false},
+  {id:'english',owner:'lena',type:'offer',title:'Карточки по английскому',subject:'Английский',description:'Набор карточек с лексикой по теме «Учёба».',closed:false}
+];
+const storageKey = 'college-material-exchange-v1';
+const screen = document.querySelector('#screen');
+const statusBox = document.querySelector('#status');
+const profile = document.querySelector('#profile');
+let state = {posts:seed,replies:[]};
+let page = 'catalog';
+let currentId = '';
+let filters = {query:'',type:'',subject:''};
+try {
+  const saved = JSON.parse(localStorage.getItem(storageKey));
+  if (saved && Array.isArray(saved.posts) && Array.isArray(saved.replies)) state = saved;
+} catch {
+  showStatus('Хранилище недоступно. Открыты примеры объявлений.',true);
+}
+function escapeText(value) {
+  return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function showStatus(message, error = false) {
+  statusBox.classList.toggle('error',error);
+  statusBox.textContent = message;
+}
+function save(next) {
+  try {
+    localStorage.setItem(storageKey,JSON.stringify(next));
+    state = next;
+    return true;
+  } catch {
+    showStatus('Не удалось сохранить данные. Проверьте доступ браузера к локальному хранилищу и попробуйте снова.',true);
+    return false;
+  }
+}
+function navigate(next,id = '',message = '') {
+  page = next;
+  currentId = id;
+  showStatus(message);
+  render();
+  const heading = screen.querySelector('h1');
+  heading.tabIndex = -1;
+  heading.focus();
+}
+function labelFor(post) {
+  return post.type === 'offer' ? 'Предложение' : 'Запрос';
+}
+function card(post) {
+  return '<article class="card"><span class="tag '+(post.type === 'request' ? 'request' : '')+'">'+labelFor(post)+'</span><h2>'+escapeText(post.title)+'</h2><p class="muted">'+escapeText(post.subject)+(post.closed ? ' · Закрыто' : '')+'</p><button type="button" data-post="'+escapeText(post.id)+'">Открыть</button></article>';
+}
+function options(values) {
+  return values.map(value => '<option>'+escapeText(value)+'</option>').join('');
+}
+function drawCatalog() {
+  const query = filters.query.trim().toLocaleLowerCase('ru');
+  const posts = state.posts.filter(post => !post.closed && (!filters.type || post.type === filters.type) &&
+    (!filters.subject || post.subject === filters.subject) && post.title.toLocaleLowerCase('ru').includes(query));
+  screen.querySelector('#results').innerHTML = posts.length
+    ? '<p class="muted count">Объявлений: '+posts.length+'</p><div class="grid">'+posts.map(card).join('')+'</div>'
+    : '<p class="empty">Объявлений не найдено. Измените запрос или сбросьте фильтры.</p>';
+}
+function renderCatalog() {
+  screen.innerHTML = '<div class="intro"><h1>Каталог объявлений</h1><p>Найдите нужный учебник или поделитесь своими материалами.</p></div><div class="filters"><input id="query" type="search" aria-label="Поиск по названию" placeholder="Поиск по названию"><select id="type" aria-label="Тип объявления"><option value="">Все типы</option><option value="offer">Предложения</option><option value="request">Запросы</option></select><select id="subject" aria-label="Дисциплина"><option value="">Все дисциплины</option>'+options(subjects)+'</select><button type="button" id="reset">Сбросить</button></div><div id="results" aria-live="polite"></div>';
+  for (const key of Object.keys(filters)) {
+    const field = screen.querySelector('#'+key);
+    field.value = filters[key];
+    field.addEventListener('input',() => {filters[key] = field.value; drawCatalog();});
+  }
+  screen.querySelector('#reset').onclick = () => {
+    filters = {query:'',type:'',subject:''};
+    for (const key of Object.keys(filters)) screen.querySelector('#'+key).value = '';
+    drawCatalog();
+    screen.querySelector('#query').focus();
+  };
+  drawCatalog();
+}
+function renderNew() {
+  screen.innerHTML = '<h1>Новое объявление</h1><form class="panel" id="new-post"><label class="field">Тип<select name="type"><option value="offer">Предложение</option><option value="request">Запрос</option></select></label><label class="field">Название<input name="title" required maxlength="100"></label><label class="field">Дисциплина<select name="subject" required><option value="">Выберите дисциплину</option>'+options(subjects)+'</select></label><label class="field">Описание<textarea name="description" required maxlength="600" rows="4"></textarea></label><button class="primary">Опубликовать</button></form>';
+}
+function renderDetail() {
+  const post = state.posts.find(item => item.id === currentId);
+  if (!post) {
+    screen.innerHTML = '<h1>Объявление недоступно</h1><button type="button" data-page="catalog">К каталогу</button>';
+    return;
+  }
+  const own = post.owner === profile.value;
+  const replies = state.replies.filter(reply => reply.postId === post.id);
+  const ownReply = replies.find(reply => reply.author === profile.value);
+  let actions = '<p class="muted">Объявление закрыто.</p>';
+  if (own) {
+    const messages = replies.map(reply => '<li><strong>'+escapeText(profiles[reply.author])+'</strong> — '+escapeText(reply.message)+'</li>').join('');
+    actions = '<section class="panel"><h2>Отклики</h2>'+(messages ? '<ul>'+messages+'</ul>' : '<p class="muted">Откликов пока нет.</p>')+(post.closed ? '<p>Объявление закрыто.</p>' : '<button type="button" id="close-post">Закрыть объявление</button>')+'</section>';
+  } else if (ownReply) {
+    actions = '<section class="panel"><h2>Ваш отклик</h2><p class="description">'+escapeText(ownReply.message)+'</p></section>';
+  } else if (!post.closed) {
+    actions = '<form id="reply" class="panel"><label class="field">Сообщение автору<textarea name="message" required maxlength="400" rows="3"></textarea></label><button class="primary">Откликнуться</button></form>';
+  }
+  screen.innerHTML = '<p><button type="button" data-page="'+(own ? 'mine' : 'catalog')+'">← '+(own ? 'Мои объявления' : 'Каталог')+'</button></p><article class="panel"><span class="tag">'+labelFor(post)+'</span><h1>'+escapeText(post.title)+'</h1><p class="muted">'+escapeText(post.subject)+' · '+escapeText(profiles[post.owner])+'</p><p class="description">'+escapeText(post.description)+'</p></article>'+actions;
+}
+function render() {
+  document.querySelectorAll('nav [data-page]').forEach(button => {
+    if (button.dataset.page === page) button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  });
+  if (page === 'catalog') renderCatalog();
+  if (page === 'new') renderNew();
+  if (page === 'detail') renderDetail();
+  if (page === 'mine') {
+    const posts = state.posts.filter(post => post.owner === profile.value);
+    screen.innerHTML = '<h1>Мои объявления</h1>'+(posts.length ? '<div class="grid">'+posts.map(card).join('')+'</div>' : '<div class="empty"><p>У вас пока нет объявлений.</p><button type="button" data-page="new">Опубликовать</button></div>');
+  }
+}
+document.addEventListener('click',event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.dataset.page) navigate(button.dataset.page);
+  if (button.dataset.post) navigate('detail',button.dataset.post);
+  if (button.id === 'close-post') {
+    const post = state.posts.find(item => item.id === currentId);
+    if (!post || post.owner !== profile.value || post.closed) return;
+    const posts = state.posts.map(item => item.id === currentId ? {...item,closed:true} : item);
+    if (save({...state,posts})) navigate('detail',currentId,'Объявление закрыто.');
+  }
+});
+screen.addEventListener('input',event => {
+  if (event.target.matches('input,textarea')) event.target.setCustomValidity('');
+});
+screen.addEventListener('submit',event => {
+  event.preventDefault();
+  const form = event.target;
+  const data = Object.fromEntries(new FormData(form));
+  for (const field of form.querySelectorAll('input,textarea')) {
+    data[field.name] = data[field.name].trim();
+    if (!data[field.name]) {
+      field.setCustomValidity('Заполните это поле.');
+      field.reportValidity();
+      return;
+    }
+  }
+  if (form.id === 'new-post') {
+    const post = {...data,id:crypto.randomUUID(),owner:profile.value,closed:false};
+    if (save({...state,posts:[post,...state.posts]})) {
+      filters = {query:'',type:'',subject:''};
+      navigate('catalog','','Объявление опубликовано.');
+    }
+  }
+  if (form.id === 'reply') {
+    const post = state.posts.find(item => item.id === currentId);
+    if (!post || post.closed || post.owner === profile.value ||
+        state.replies.some(reply => reply.postId === currentId && reply.author === profile.value)) return;
+    const reply = {postId:currentId,author:profile.value,message:data.message};
+    if (save({...state,replies:[...state.replies,reply]})) navigate('detail',currentId,'Отклик сохранён.');
+  }
+});
+profile.addEventListener('change',() => {showStatus('');render();});
+window.addEventListener('storage',event => {
+  if (event.key !== storageKey || !event.newValue) return;
+  try { state = JSON.parse(event.newValue); render(); } catch { /* Keep the current view. */ }
+});
+render();
+</script>
+</html>
