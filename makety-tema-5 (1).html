@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Макеты студенческого обмена</title>
+<style>
+:root{font:16px/1.5 "Segoe UI",sans-serif;color:#242b27;background:#eef0ed}
+*{box-sizing:border-box}body{max-width:1220px;margin:auto;padding:32px 24px}
+h1,h2,h3{line-height:1.2}h1{font-size:clamp(2rem,5vw,3rem);margin:0 0 8px}
+h2{font-size:1.32rem;margin:0 0 14px}h3{font-size:1.15rem;margin:14px 0 8px}
+p{margin:6px 0 12px}.layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+section{padding:20px;background:#fff;border:1px solid #c5cbc5;border-radius:12px;min-width:0}
+.outline{margin:20px 0}.screen{background:#fafafa;border:1px solid #abb3ac;border-radius:8px;padding:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px 15px;padding-bottom:8px;border-bottom:1px solid #bfc6bf;font-size:.82rem}
+a{color:#264536;text-underline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.field,.button,.card,.notice{border:1px solid #aeb7ae;border-radius:5px;padding:7px 10px;display:block;margin:8px 0}
+.field{background:#fff}.field small{display:block;color:#4e5b52}.card,.notice{background:#eff1ef}
+.button{background:#dce1dc;font-weight:600;display:inline-block;text-decoration:none;color:inherit}
+.row .field{flex:1 1 140px}.example{font-size:.85rem;font-weight:600;margin:0 0 4px}
+.examples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.error{border-color:#9c554b;color:#793129;background:#fff6f3}.success{border-color:#6d9176;background:#eff6ee}
+ol{margin-bottom:0;padding-left:24px}li+li{margin-top:7px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}body{padding:20px 14px}}
+@media(max-width:400px){.examples{grid-template-columns:1fr}}
+</style>
+<header><h1>Макеты студенческого обмена</h1><p>Тема 5 · Карта страниц, основные экраны и состояния интерфейса</p></header>
+<section class="outline">
+  <h2>Карта страниц и переходов</h2>
+  <ol>
+    <li><a href="#catalog">Каталог</a> → <a href="#detail">Карточка чужого объявления</a> → отправка отклика → <a href="#success">подтверждение</a>.</li>
+    <li><a href="#new">Новое объявление</a> → публикация предложения или запроса → <a href="#catalog">Каталог</a>.</li>
+    <li><a href="#mine">Мои объявления</a> → <a href="#owner">Карточка своего объявления</a> → просмотр откликов или закрытие объявления.</li>
+  </ol>
+</section>
+<main class="layout">
+  <section id="catalog">
+    <h2>Каталог</h2>
+    <div class="screen">
+      <div class="nav"><a href="#catalog">Каталог</a><a href="#mine">Мои объявления</a><a href="#new">Опубликовать</a></div>
+      <h3>Каталог объявлений</h3>
+      <div class="row"><span class="field">Поиск по названию</span><span class="field">Тип ▾</span><span class="field">Дисциплина ▾</span></div>
+      <div class="card"><small>Предложение · Математика</small><br><a href="#detail">Сборник задач по алгебре</a></div>
+      <div class="card"><small>Запрос · Информатика</small><br>Конспект по SQL</div>
+    </div>
+  </section>
+  <section id="detail">
+    <h2>Карточка чужого объявления</h2>
+    <div class="screen">
+      <div class="nav"><a href="#catalog">← Каталог</a></div>
+      <h3>Сборник задач по алгебре</h3>
+      <p>Предложение · Математика · Лена</p>
+      <p>Бумажный сборник за первый курс. Могу передать после занятий.</p>
+      <div class="field"><small>Сообщение автору</small>Могу забрать после занятий.</div>
+      <a class="button" href="#success">Откликнуться</a>
+    </div>
+  </section>
+  <section id="new">
+    <h2>Новое объявление</h2>
+    <div class="screen">
+      <div class="nav"><a href="#catalog">Каталог</a><a href="#mine">Мои объявления</a><a href="#new">Опубликовать</a></div>
+      <h3>Новое объявление</h3>
+      <div class="field"><small>Тип</small>Предложение / Запрос ▾</div>
+      <div class="field"><small>Название</small>Справочник по Python</div>
+      <div class="field"><small>Дисциплина</small>Информатика ▾</div>
+      <div class="field"><small>Описание</small>Справочник с примерами для начинающих.</div>
+      <a class="button" href="#catalog">Опубликовать</a>
+    </div>
+  </section>
+  <section id="mine">
+    <h2>Мои объявления</h2>
+    <div class="screen">
+      <div class="nav"><a href="#catalog">Каталог</a><a href="#mine">Мои объявления</a><a href="#new">Опубликовать</a></div>
+      <h3>Мои объявления</h3>
+      <div class="card"><small>Активно</small><br><a href="#owner">Сборник задач по алгебре</a></div>
+      <div class="card"><small>Закрыто</small><br>Карточки по английскому</div>
+    </div>
+  </section>
+  <section id="owner">
+    <h2>Карточка своего объявления</h2>
+    <div class="screen">
+      <div class="nav"><a href="#mine">← Мои объявления</a></div>
+      <h3>Сборник задач по алгебре</h3>
+      <p>Предложение · Математика · Лена</p>
+      <h3>Отклики</h3>
+      <div class="card"><strong>Саша</strong> — Могу забрать после занятий.</div>
+      <span class="button">Закрыть объявление</span>
+    </div>
+  </section>
+  <section>
+    <h2>Состояния интерфейса</h2>
+    <div class="examples">
+      <div class="screen"><p class="example">С данными</p><div class="card">Сборник задач по алгебре</div></div>
+      <div class="screen"><p class="example">Пустая выдача</p><div class="notice">Объявлений не найдено.</div><a href="#catalog">Сбросить фильтры</a></div>
+      <div class="screen"><p class="example">Ошибка заполнения</p><div class="field error"><small>Название</small>Заполните это поле.</div></div>
+      <div class="screen" id="success"><p class="example">Действие выполнено</p><div class="notice success">Отклик сохранён.</div></div>
+    </div>
+  </section>
+</main>
+</html>
